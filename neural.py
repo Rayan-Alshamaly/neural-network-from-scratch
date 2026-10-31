@@ -2,12 +2,19 @@ import numpy as np
 import random
 from math import *
 
+def sigmoid(x):
+    return 1/(1+exp(-x))
+
+def derivative_sigmoid(sigmoid_y):
+    return sigmoid_y*(1-sigmoid_y)
+
 class Perceptron:
-    def __init__(self,n_inputs):
+    def __init__(self,n_inputs,weights=None):
         self.n = n_inputs
-        self.weights = np.zeros(n_inputs+1)
-        for i  in range(n_inputs+1):
-            self.weights[i] = random.random()
+        if weights is not None:
+            self.weights = weights
+        else:
+            self.weights = np.random.uniform(-1, 1, n_inputs + 1)
         self.inputs = np.zeros(n_inputs)
         self.output = 0
         self.delta = 0
@@ -22,18 +29,15 @@ class Perceptron:
     
 
 class Network:
-    def __init__(self,n_inputs,layers_sizes,learning_rate,activation_function,derivative_function):
-        self.n = n_inputs
+    def __init__(self,layers_sizes,learning_rate,weights=None):
         self.layers = []
         self.learning_rate = learning_rate
-        self.function = activation_function
-        self.derivative_function = derivative_function
             
-        for i,layer_size in enumerate(layers_sizes):
+        for i in range(1,len(layers_sizes)):
             layer = []
-            for _ in range(layer_size):
-                if i == 0:
-                    perceptron = Perceptron(n_inputs)
+            for j in range(layers_sizes[i]):
+                if weights is not None:
+                    perceptron = Perceptron(layers_sizes[i-1],weights[i][j])
                 else:
                     perceptron = Perceptron(layers_sizes[i-1])
                 layer.append(perceptron)
@@ -47,7 +51,7 @@ class Network:
             outputs = []
             
             for j in range(len(self.layers[i])):
-                outputs.append(self.layers[i][j].activate(inputs,self.function))
+                outputs.append(self.layers[i][j].activate(inputs,sigmoid))
         
             inputs = outputs.copy()
             inputs.append(1)
@@ -70,7 +74,7 @@ class Network:
                     delta = 0
                     for perceptron_next_layer in next_layer:
                         delta += perceptron_next_layer.weights[j]*perceptron_next_layer.delta
-                    perceptron.delta = self.derivative_function(perceptron.output)*delta
+                    perceptron.delta = derivative_sigmoid(perceptron.output)*delta
                 
     
     def update_weights(self):
@@ -86,8 +90,7 @@ class Network:
         self.update_weights()
         return outputs
             
-    def evaluate(self,inputs):
-            outputs = self.forward_pass(inputs)
+    def evaluate(self,outputs):
             prediction = np.argmax(outputs)
             return prediction
                             
